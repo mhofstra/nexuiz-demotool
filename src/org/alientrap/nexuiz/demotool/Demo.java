@@ -56,7 +56,7 @@ public class Demo {
 			fis.read(data);
 			packet.setData(data);
 			
-			if (Util.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVCSIGNON) {
+			if (Util.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVC_NOP) {
 				
 			}
 			
@@ -137,7 +137,7 @@ public class Demo {
 				//System.out.println(dp + "\n");
 			//}
 			
-			if (length == 1 && dp.getData()[0] == DemoPacket.SVCSIGNON) {
+			if (length == 1 && dp.getData()[0] == DemoPacket.SVC_NOP) {
 				System.out.println("received signon");
 				if (current != null) {
 					demos.add(current);
