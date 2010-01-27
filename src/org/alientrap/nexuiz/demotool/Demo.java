@@ -10,16 +10,18 @@ import java.util.Iterator;
 
 public class Demo {
 
-	private File demo;
+	private File demofile;
 	private ArrayList<DemoPacket> packets = new ArrayList<DemoPacket>();
 	byte[] cdtrack;
 	
-	public Demo(File demo) {
-		this.demo = demo;
+	public Demo(File demofile) {
+		this.demofile = demofile;
 	}
 	
+	public Demo() {}
+	
 	public void parseDemoFile() throws IOException {
-		FileInputStream fis = new FileInputStream(demo);
+		FileInputStream fis = new FileInputStream(demofile);
 		
 		// get cdtrack
 		byte[] temp = new byte[1024];
@@ -51,6 +53,10 @@ public class Demo {
 			fis.read(data);
 			packet.setData(data);
 			
+			if (DemoPacket.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVCSIGNON) {
+				
+			}
+			
 			packets.add(packet);
 		}
 		
@@ -79,15 +85,50 @@ public class Demo {
 			return null;
 		}
 		
-		return null;
+		ArrayList<Demo> demos = new ArrayList<Demo>();
+		Demo current = null;
+		
+		Iterator<DemoPacket> it = packets.iterator();
+		while (it.hasNext()) {
+			DemoPacket dp = (DemoPacket) it.next();
+			long length = DemoPacket.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
+			
+			//if (length > 1 && dp.getData()[0] == (byte)010 && dp.getData()[(int)length-1] == 013) {
+				//System.out.println(dp + "\n");
+			//}
+			
+			if (length == 1 && dp.getData()[0] == DemoPacket.SVCSIGNON) {
+				System.out.println("received signon");
+				if (current != null) {
+					demos.add(current);
+				}
+				current = new Demo();
+				current.setCdtrack(cdtrack);
+			}
+			
+			if (current == null) {
+				//System.out.println("no signon received");
+				//System.exit(0);
+			} else {
+				current.getPackets().add(dp);
+			}
+			
+			
+		}
+		
+		if (demos.isEmpty()) {
+			return null;
+		}
+		
+		return (Demo[]) demos.toArray();
 	}
 
-	public File getDemo() {
-		return demo;
+	public File getDemofile() {
+		return demofile;
 	}
 
-	public void setDemo(File demo) {
-		this.demo = demo;
+	public void setDemofile(File demofile) {
+		this.demofile = demofile;
 	}
 
 	public ArrayList<DemoPacket> getPackets() {

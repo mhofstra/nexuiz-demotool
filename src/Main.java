@@ -14,5 +14,6 @@ public class Main {
 		
 		Demo d = new Demo(new File("/home/merlijn/.nexuiz/data/demos/2009-01-07_20-19_dance.dem"));
 		d.parseDemoFile();
+		d.splitDemo();
 	}
 }
