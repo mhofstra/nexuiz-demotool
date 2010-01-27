@@ -27,7 +27,8 @@ public class Demo {
 		byte[] temp = new byte[1024];
 		int i = 0;
 		while ((temp[i] = (byte)fis.read()) != DemoPacket.CDTRACKEND) { i++; }
-		cdtrack = new byte[i+1];
+		i++;
+		cdtrack = new byte[i];
 		System.arraycopy(temp, 0, cdtrack, 0, i);
 		
 		// start reading packets
@@ -78,6 +79,43 @@ public class Demo {
 		
 		fos.flush();
 		fos.close();
+	}
+	
+	/**
+	 * remove any cutmarks that may have been inserted to capture a video from this demo
+	 */
+	public void removeCutmarks() {
+		Iterator<DemoPacket> it = packets.iterator();
+		ArrayList<DemoPacket> dps = new ArrayList<DemoPacket>();
+		while (it.hasNext()) {
+			DemoPacket dp = it.next();
+			byte[] data = dp.getData();
+			byte[] angles = dp.getAngles();
+			long length = DemoPacket.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
+			
+			if (length >= 12 && data[0] == (byte)011) {
+				byte[] cutmark = new byte[11];
+				System.arraycopy(data, 1, cutmark, 0, 11);
+				String check = new String(cutmark);
+				if (check.equals("\n//CUTMARK\n")) {
+					int i = 12;
+					while (data[i] != (byte)000) { i++; }
+					i++;
+					byte[] newdata = new byte[(int)(length-i)];
+					System.arraycopy(data, i, newdata, 0, (int)length-i);
+					//System.out.println(dp + "\n");
+					dp = new DemoPacket();
+					dp.setData(newdata);
+					dp.setAngles(angles);
+					dp.setLength(DemoPacket.unsignedIntToLEByteArray(newdata.length));
+					//System.out.println(dp + "\n");
+				}
+			}
+			
+			dps.add(dp);
+		}
+		
+		packets = dps;
 	}
 	
 	public Demo[] splitDemo() {

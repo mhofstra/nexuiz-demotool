@@ -1,7 +1,5 @@
 package org.alientrap.nexuiz.demotool;
 
-import java.nio.ByteBuffer;
-
 public class DemoPacket {
 
 	public static byte CDTRACKEND = (byte)012;
@@ -86,7 +84,7 @@ public class DemoPacket {
 	 */
 	public static long getLEUnsignedIntFromByteArray(byte[] array,int pos) {
 
-		if((array[pos]&0x80) == 0x80){
+		if((array[array.length-(pos+1)]&0x80) == 0x80){
 			long i = 0;
 
 			i += ((array[pos+3])&(0x7f)) << 24;
@@ -106,6 +104,14 @@ public class DemoPacket {
 
 		return ((long)i);
 
+	}
+	
+	public static byte[] unsignedIntToLEByteArray(int a) {
+		byte[] b = new byte[4];
+		for (int i=3; i>=0;i--) {
+			b[i] = (byte)(Math.floor(a / Math.pow(256, i)) % 256);
+		}
+		return b;
 	}
 	
 	public static int unsignedByteToInt(byte b) {
