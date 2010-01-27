@@ -43,8 +43,8 @@ public class Demo {
 			long length = Util.getLEUnsignedIntFromByteArray(len, 0);
 			length = length & 0x7FFFFFFF; // only useful for server demos
 			if (length > Integer.MAX_VALUE) {
-				System.out.println("packet too large");
-				System.exit(0);
+				System.out.println("packet too large: " + length);
+				continue;
 			}
 			packet.setLength(len);
 			
@@ -55,6 +55,10 @@ public class Demo {
 			byte[] data = new byte[(int)length];
 			fis.read(data);
 			packet.setData(data);
+			
+			if (data[0] == DemoPacket.SVC_BAD) {
+				System.out.println("Got a bad packet:\n" + packet);
+			}
 			
 			if (Util.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVC_NOP) {
 				
@@ -133,9 +137,9 @@ public class Demo {
 			DemoPacket dp = (DemoPacket) it.next();
 			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
 			
-			//if (length > 1 && dp.getData()[0] == (byte)010 && dp.getData()[(int)length-1] == 013) {
-				//System.out.println(dp + "\n");
-			//}
+			if (length > 1 && dp.getData()[0] == DemoPacket.SVC_SERVERINFO) {
+				System.out.println(dp + "\n");
+			}
 			
 			if (length == 1 && dp.getData()[0] == DemoPacket.SVC_NOP) {
 				System.out.println("received signon");
