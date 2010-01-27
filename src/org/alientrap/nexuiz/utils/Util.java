@@ -64,7 +64,7 @@ public class Util {
 
 	}
 	
-	public static byte[] unsignedIntToLEByteArray(int a) {
+	public static byte[] unsignedIntToLEByteArray(long a) {
 		byte[] b = new byte[4];
 		for (int i=3; i>=0;i--) {
 			b[i] = (byte)(Math.floor(a / Math.pow(256, i)) % 256);

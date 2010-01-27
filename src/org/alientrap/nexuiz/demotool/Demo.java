@@ -124,6 +124,25 @@ public class Demo {
 		packets = dps;
 	}
 	
+	public void insertCutmarks(double start, double end) {
+		Iterator<DemoPacket> it = packets.iterator();
+		ArrayList<DemoPacket> dps = new ArrayList<DemoPacket>();
+		boolean first = true;
+		while (it.hasNext()) {
+			DemoPacket dp = it.next();
+			double time = dp.getTime();
+			
+			if (first && start > 1) {
+				dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 100\n\000").getBytes());
+				first = false;
+			}
+			
+			dps.add(dp);
+		}
+		
+		packets = dps;
+	}
+	
 	public Demo[] splitDemo() {
 		if (packets.isEmpty()) {
 			return null;
@@ -137,7 +156,7 @@ public class Demo {
 			DemoPacket dp = (DemoPacket) it.next();
 			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
 			
-			if (length > 1 && dp.getData()[0] == DemoPacket.SVC_SERVERINFO) {
+			if (length >= 1 && dp.getData()[0] == DemoPacket.SVC_PRINT) {
 				System.out.println(dp + "\n");
 			}
 			

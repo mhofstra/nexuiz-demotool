@@ -115,6 +115,20 @@ public class DemoPacket {
 		return ret;
 	}
 	
-	
+	public static DemoPacket insertCutmark(DemoPacket in, byte[] cutmark) {
+		DemoPacket ret = new DemoPacket();
+		
+		long length = Util.getLEUnsignedIntFromByteArray(in.getLength(), 0) + cutmark.length;
+		ret.setLength(Util.unsignedIntToLEByteArray(length));
+		
+		ret.setAngles(in.getAngles());
+		
+		byte[] tmp = new byte[(int)length];
+		System.arraycopy(cutmark, 0, tmp, 0, cutmark.length);
+		System.arraycopy(in.getData(), 0, tmp, cutmark.length, in.getData().length);
+		ret.setData(tmp);
+		
+		return ret;
+	}
 	
 }
