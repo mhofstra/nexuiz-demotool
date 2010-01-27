@@ -1,9 +1,7 @@
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.alientrap.nexuiz.demotool.Demo;
-import org.alientrap.nexuiz.demotool.DemoPacket;
 
 
 public class Main {
@@ -20,14 +18,9 @@ public class Main {
 		d2.parseDemoFile();
 		d2.removeCutmarks();
 		
-		ArrayList<DemoPacket> ar1 = d1.getPackets();
-		ArrayList<DemoPacket> ar2 = d2.getPackets();
-		for (int i = 0; i < ar1.size(); i++) {
-			if (!ar1.get(i).toString().equals(ar2.get(i).toString())) {
-				System.out.println(ar1.get(i) + "\n");
-				System.out.println(ar2.get(i) + "\n");
-			}
+		if (d1.equals(d2)) {
+			d2.writeDemo(new File("/home/merlijn/.nexuiz/data/cuttest-removed.dem"));
+			System.out.println("Successful removal");
 		}
-		d2.writeDemo(new File("/home/merlijn/.nexuiz/data/cuttest-removed.dem"));
 	}
 }

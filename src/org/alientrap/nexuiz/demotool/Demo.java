@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import org.alientrap.nexuiz.utils.Util;
+
 
 public class Demo {
 
@@ -38,7 +40,7 @@ public class Demo {
 			byte[] len = new byte[4];
 			fis.read(len);
 			
-			long length = DemoPacket.getLEUnsignedIntFromByteArray(len, 0);
+			long length = Util.getLEUnsignedIntFromByteArray(len, 0);
 			length = length & 0x7FFFFFFF; // only useful for server demos
 			if (length > Integer.MAX_VALUE) {
 				System.out.println("packet too large");
@@ -54,7 +56,7 @@ public class Demo {
 			fis.read(data);
 			packet.setData(data);
 			
-			if (DemoPacket.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVCSIGNON) {
+			if (Util.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVCSIGNON) {
 				
 			}
 			
@@ -91,7 +93,7 @@ public class Demo {
 			DemoPacket dp = it.next();
 			byte[] data = dp.getData();
 			byte[] angles = dp.getAngles();
-			long length = DemoPacket.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
+			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
 			
 			if (length >= 12 && data[0] == (byte)011) {
 				byte[] cutmark = new byte[11];
@@ -107,7 +109,7 @@ public class Demo {
 					dp = new DemoPacket();
 					dp.setData(newdata);
 					dp.setAngles(angles);
-					dp.setLength(DemoPacket.unsignedIntToLEByteArray(newdata.length));
+					dp.setLength(Util.unsignedIntToLEByteArray(newdata.length));
 					//System.out.println(dp + "\n");
 				}
 			}
@@ -129,7 +131,7 @@ public class Demo {
 		Iterator<DemoPacket> it = packets.iterator();
 		while (it.hasNext()) {
 			DemoPacket dp = (DemoPacket) it.next();
-			long length = DemoPacket.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
+			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
 			
 			//if (length > 1 && dp.getData()[0] == (byte)010 && dp.getData()[(int)length-1] == 013) {
 				//System.out.println(dp + "\n");
@@ -159,6 +161,29 @@ public class Demo {
 		}
 		
 		return (Demo[]) demos.toArray();
+	}
+	
+	public boolean equals(Object o) {
+		if (!(o instanceof Demo))
+			return false;
+		
+		Demo other = (Demo)o;
+		
+		if (!Util.compareByteArray(cdtrack, other.getCdtrack()))
+			return false;
+		
+		ArrayList<DemoPacket> ar1 = getPackets();
+		ArrayList<DemoPacket> ar2 = other.getPackets();
+		if (ar1.size() != ar2.size())
+			return false;
+		
+		for (int i = 0; i < ar1.size(); i++) {
+			if (!ar1.get(i).toString().equals(ar2.get(i).toString())) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 
 	public File getDemofile() {
