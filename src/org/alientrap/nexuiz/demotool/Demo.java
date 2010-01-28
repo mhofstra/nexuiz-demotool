@@ -148,7 +148,10 @@ public class Demo {
 		cutmarks = -1;
 	}
 
-	public void insertCutmarks(double start, double end, boolean capture) throws DemoException {
+	public void insertCutmarks(double start, double end, boolean capture, boolean quit) throws DemoException {
+		if (hasCutmarks())
+			removeCutmarks();
+
 		Iterator<DemoPacket> it = packets.iterator();
 		ArrayList<DemoPacket> dps = new ArrayList<DemoPacket>();
 		boolean first = true;
@@ -186,11 +189,17 @@ public class Demo {
 			}
 
 			if (!demoStopped && time > end) {
+				String ins = "\011\n//CUTMARK\n";
 				if (capture) {
-					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ncl_capturevideo 0; defer 0.5 \"disconnect\"\n\000").getBytes());
+					ins += "cl_capturevideo 0; defer 0.5 \"disconnect\"";
 				} else {
-					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ndefer 0.5 \"disconnect\"\n\000").getBytes());
+					ins += "defer 0.5 \"disconnect\"";
 				}
+				if (quit)
+					ins += "; quit";
+
+				ins += "\n\000";
+				dp = DemoPacket.insertCutmark(dp, ins.getBytes());
 				demoStopped = true;
 			}
 
@@ -265,6 +274,32 @@ public class Demo {
 		}
 
 		return cutmarks > 0;
+	}
+
+	public double[] getCutmarks() {
+		double[] ret = new double[4];
+		int ctr = 0;
+		double time = 0.1;
+		Iterator<DemoPacket> it = packets.iterator();
+		while (it.hasNext()) {
+			DemoPacket dp = it.next();
+			if (dp.getTime() != 0)
+				time = dp.getTime();
+			
+			byte[] data = dp.getData();
+			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
+
+			if (length >= 12 && data[0] == (byte)011) {
+				byte[] cutmark = new byte[11];
+				System.arraycopy(data, 1, cutmark, 0, 11);
+				String check = new String(cutmark);
+				if (check.equals("\n//CUTMARK\n") && ctr < 4) {
+					ret[ctr] = time;
+					ctr++;
+				}
+			}
+		}
+		return ret;
 	}
 
 	public boolean equals(Object o) {
