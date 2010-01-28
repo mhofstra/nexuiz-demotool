@@ -15,16 +15,16 @@ public class Demo {
 	private File demofile;
 	private ArrayList<DemoPacket> packets = new ArrayList<DemoPacket>();
 	byte[] cdtrack;
-	
+
 	public Demo(File demofile) {
 		this.demofile = demofile;
 	}
-	
+
 	public Demo() {}
-	
-	public void parseDemoFile() throws IOException {
+
+	public void parseDemoFile() throws IOException, DemoException {
 		FileInputStream fis = new FileInputStream(demofile);
-		
+
 		// get cdtrack
 		byte[] temp = new byte[1024];
 		int i = 0;
@@ -32,48 +32,56 @@ public class Demo {
 		i++;
 		cdtrack = new byte[i];
 		System.arraycopy(temp, 0, cdtrack, 0, i);
-		
+
 		// start reading packets
 		while (fis.available() > 0) {
 			DemoPacket packet = new DemoPacket();
-			
+
 			byte[] len = new byte[4];
 			fis.read(len);
-			
+
 			long length = Util.getLEUnsignedIntFromByteArray(len, 0);
 			length = length & 0x7FFFFFFF; // only useful for server demos
 			if (length > Integer.MAX_VALUE) {
-				System.out.println("packet too large: " + length);
-				continue;
+				throw new DemoException("" + length, 10);
 			}
 			packet.setLength(len);
-			
+
 			byte[] angles = new byte[12];
 			fis.read(angles);
 			packet.setAngles(angles);
-			
+
 			byte[] data = new byte[(int)length];
-			fis.read(data);
+			if (fis.read(data) == -1) {
+				throw new DemoException(11);
+			}
 			packet.setData(data);
-			
+
 			if (data[0] == DemoPacket.SVC_BAD) {
-				System.out.println("Got a bad packet:\n" + packet);
+				throw new DemoException(packet.toString(), 12);
 			}
-			
-			if (Util.getLEUnsignedIntFromByteArray(len, 0) == 1 && data[0] == DemoPacket.SVC_NOP) {
-				
-			}
-			
+
 			packets.add(packet);
 		}
-		
+
 		fis.close();
 	}
-	
-	public void writeDemo(File out) throws IOException {
+
+	/**
+	 * Write the demo to disk
+	 * @param out - the output file
+	 * @throws IOException - if data cannot be written
+	 * @throws DemoException - if the demo is inconsistent
+	 */
+	public void writeDemo(File out) throws IOException, DemoException {
 		FileOutputStream fos = new FileOutputStream(out);
-		
+
+		if (cdtrack == null)
+			throw new DemoException(20);
 		fos.write(cdtrack);
+
+		if (packets.isEmpty())
+			throw new DemoException(21);
 		
 		Iterator<DemoPacket> it = packets.iterator();
 		while (it.hasNext()) {
@@ -82,11 +90,11 @@ public class Demo {
 			fos.write(packet.getAngles());
 			fos.write(packet.getData());
 		}
-		
+
 		fos.flush();
 		fos.close();
 	}
-	
+
 	/**
 	 * remove any cutmarks that may have been inserted to capture a video from this demo
 	 */
@@ -98,7 +106,7 @@ public class Demo {
 			byte[] data = dp.getData();
 			byte[] angles = dp.getAngles();
 			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
-			
+
 			if (length >= 12 && data[0] == (byte)011) {
 				byte[] cutmark = new byte[11];
 				System.arraycopy(data, 1, cutmark, 0, 11);
@@ -109,57 +117,57 @@ public class Demo {
 					i++;
 					byte[] newdata = new byte[(int)(length-i)];
 					System.arraycopy(data, i, newdata, 0, (int)length-i);
-					//System.out.println(dp + "\n");
+					
 					dp = new DemoPacket();
 					dp.setData(newdata);
 					dp.setAngles(angles);
 					dp.setLength(Util.unsignedIntToLEByteArray(newdata.length));
-					//System.out.println(dp + "\n");
 				}
 			}
-			
 			dps.add(dp);
 		}
-		
 		packets = dps;
 	}
-	
-	public void insertCutmarks(double start, double end) {
+
+	public void insertCutmarks(double start, double end, boolean capture) {
 		Iterator<DemoPacket> it = packets.iterator();
 		ArrayList<DemoPacket> dps = new ArrayList<DemoPacket>();
 		boolean first = true;
 		while (it.hasNext()) {
 			DemoPacket dp = it.next();
 			double time = dp.getTime();
-			
-			if (first && start > 1) {
-				dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 100\n\000").getBytes());
-				first = false;
+
+			if (time == 0) {
+				if (first && start > 1) {
+					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 100\n\000").getBytes());
+					first = false;
+				}
 			}
-			
+
+
 			dps.add(dp);
 		}
-		
+
 		packets = dps;
 	}
-	
+
 	public Demo[] splitDemo() {
 		if (packets.isEmpty()) {
 			return null;
 		}
-		
+
 		ArrayList<Demo> demos = new ArrayList<Demo>();
 		Demo current = null;
-		
+
 		Iterator<DemoPacket> it = packets.iterator();
 		while (it.hasNext()) {
 			DemoPacket dp = (DemoPacket) it.next();
 			long length = Util.getLEUnsignedIntFromByteArray(dp.getLength(), 0);
-			
+
 			if (length >= 1 && dp.getData()[0] == DemoPacket.SVC_PRINT) {
 				System.out.println(dp + "\n");
 			}
-			
+
 			if (length == 1 && dp.getData()[0] == DemoPacket.SVC_NOP) {
 				System.out.println("received signon");
 				if (current != null) {
@@ -168,44 +176,44 @@ public class Demo {
 				current = new Demo();
 				current.setCdtrack(cdtrack);
 			}
-			
+
 			if (current == null) {
 				//System.out.println("no signon received");
 				//System.exit(0);
 			} else {
 				current.getPackets().add(dp);
 			}
-			
-			
+
+
 		}
-		
+
 		if (demos.isEmpty()) {
 			return null;
 		}
-		
+
 		return (Demo[]) demos.toArray();
 	}
-	
+
 	public boolean equals(Object o) {
 		if (!(o instanceof Demo))
 			return false;
-		
+
 		Demo other = (Demo)o;
-		
+
 		if (!Util.compareByteArray(cdtrack, other.getCdtrack()))
 			return false;
-		
+
 		ArrayList<DemoPacket> ar1 = getPackets();
 		ArrayList<DemoPacket> ar2 = other.getPackets();
 		if (ar1.size() != ar2.size())
 			return false;
-		
+
 		for (int i = 0; i < ar1.size(); i++) {
 			if (!ar1.get(i).toString().equals(ar2.get(i).toString())) {
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 
