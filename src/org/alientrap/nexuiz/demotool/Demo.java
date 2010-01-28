@@ -31,7 +31,7 @@ public class Demo {
 	public void parseDemoFile() throws IOException, DemoException {
 		if (demofile == null)
 			throw new DemoException(13);
-		
+
 		FileInputStream fis = new FileInputStream(demofile);
 
 		// get cdtrack
@@ -69,7 +69,7 @@ public class Demo {
 			if (data[0] == DemoPacket.SVC_BAD) {
 				throw new DemoException(packet.toString(), 12);
 			}
-			
+
 			if (length >= 12 && data[0] == (byte)011) {
 				byte[] cutmark = new byte[11];
 				System.arraycopy(data, 1, cutmark, 0, 11);
@@ -100,7 +100,7 @@ public class Demo {
 
 		if (packets.isEmpty())
 			throw new DemoException(21);
-		
+
 		Iterator<DemoPacket> it = packets.iterator();
 		while (it.hasNext()) {
 			DemoPacket packet = (DemoPacket) it.next();
@@ -135,7 +135,7 @@ public class Demo {
 					i++;
 					byte[] newdata = new byte[(int)(length-i)];
 					System.arraycopy(data, i, newdata, 0, (int)length-i);
-					
+
 					dp = new DemoPacket();
 					dp.setData(newdata);
 					dp.setAngles(angles);
@@ -154,49 +154,49 @@ public class Demo {
 		boolean first = true;
 		short demoStarted = 0;
 		boolean demoStopped = false;
-		
+		double time = 0.1;
+
 		while (it.hasNext()) {
 			DemoPacket dp = it.next();
-			double time = dp.getTime();
+			if (dp.getTime() != 0)
+				time = dp.getTime();
 
-			if (time == 0) {
-				if (first && start > 1) {
-					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 100\n\000").getBytes());
-					first = false;
-				}
-				
-				if (demoStarted < 1 && time > start - 50) {
-					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 10\n\000").getBytes());
-					demoStarted = 1;
-				}
-				
-				if (demoStarted < 2 && time > start - 5) {
-					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 1\n\000").getBytes());
-					demoStarted = 2;
-				}
-				
-				if (demoStarted < 3 && time > start) {
-					if (capture) {
-						dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ncl_capturevideo 1\n\000").getBytes());
-					} else {
-						dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 0; defer 1 \"slowmo 1\"\n\000").getBytes());
-					}
-					demoStarted = 3;
-				}
-				
-				if (!demoStopped && time > end) {
-					if (capture) {
-						dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ncl_capturevideo 0; defer 0.5 \"disconnect\"\n\000").getBytes());
-					} else {
-						dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ndefer 0.5 \"disconnect\"\n\000").getBytes());
-					}
-					demoStopped = true;
-				}
+			if (first && start > 1) {
+				dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 100\n\000").getBytes());
+				first = false;
 			}
-			
+
+			if (demoStarted < 1 && time > start - 50) {
+				dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 10\n\000").getBytes());
+				demoStarted = 1;
+			}
+
+			if (demoStarted < 2 && time > start - 5) {
+				dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 1\n\000").getBytes());
+				demoStarted = 2;
+			}
+
+			if (demoStarted < 3 && time > start) {
+				if (capture) {
+					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ncl_capturevideo 1\n\000").getBytes());
+				} else {
+					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\nslowmo 0; defer 1 \"slowmo 1\"\n\000").getBytes());
+				}
+				demoStarted = 3;
+			}
+
+			if (!demoStopped && time > end) {
+				if (capture) {
+					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ncl_capturevideo 0; defer 0.5 \"disconnect\"\n\000").getBytes());
+				} else {
+					dp = DemoPacket.insertCutmark(dp, new String("\011\n//CUTMARK\ndefer 0.5 \"disconnect\"\n\000").getBytes());
+				}
+				demoStopped = true;
+			}
+
 			dps.add(dp);
 		}
-		
+
 		packets = dps;
 		cutmarks = 1;
 	}
@@ -243,7 +243,7 @@ public class Demo {
 
 		return (Demo[]) demos.toArray();
 	}
-	
+
 	public boolean hasCutmarks() {
 		if (cutmarks == 0) {
 			Iterator<DemoPacket> it = packets.iterator();
@@ -263,7 +263,7 @@ public class Demo {
 				}
 			}
 		}
-		
+
 		return cutmarks > 0;
 	}
 
