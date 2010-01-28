@@ -96,6 +96,17 @@ public class DemoPacket {
 		this.data = data;
 	}
 	
+	public boolean equals(Object o) {
+		if (!(o instanceof DemoPacket))
+			return false;
+		
+		DemoPacket other = (DemoPacket)o;
+		
+		return ((Util.compareByteArray(length, other.getLength())) &&
+				(Util.compareByteArray(angles, other.getAngles())) &&
+				(Util.compareByteArray(data, other.getData())));
+	}
+	
 	public String toString() {
 		long length = Util.getLEUnsignedIntFromByteArray(getLength(), 0);
 		String ret = "length: " + length  + "\n\n";
@@ -107,7 +118,7 @@ public class DemoPacket {
 		String dat = Util.byteArrayToHexString(data);
 		for(int i = 0; i < Math.floor(dat.length()/3); i++) {
 			ret += dat.substring(i*3, (i*3)+3);
-			if (i % 8 == 7) {
+			if (i % 16 == 15) {
 				ret += "\n";
 			}
 		}

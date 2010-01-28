@@ -34,6 +34,8 @@ public class DemoException extends Exception {
 			return "Could not read enough data";
 		case 12:
 			return "Got a bad packet:";
+		case 13:
+			return "No file given to parse";
 		case 20:
 			return "Cdtrack isn't defined";
 		case 21:
